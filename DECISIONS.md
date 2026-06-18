@@ -81,3 +81,33 @@ negligible cost; `export` remains available for re-generation.
 
 ## D9 — License: MIT
 Per `10_DECISION_POLICY.md` default. (Repo already ships an MIT `LICENSE`.)
+
+## D10 — Xcode project via XcodeGen; unsandboxed dev-mode app
+**Choice:** The Xcode project is defined by `app-macos/project.yml` and generated
+with XcodeGen (`xcodegen generate`) rather than hand-maintaining a `.pbxproj`. The
+MVP app runs in developer mode with the **App Sandbox disabled** and Hardened Runtime
+enabled.
+
+**Reasoning:** This work was authored on Linux where Xcode cannot run, so a
+hand-written `.pbxproj` could not be compiled or verified — shipping an unverified
+binary project file would violate the "no fake validation" rule. A declarative
+`project.yml` is reviewable, regenerable, and avoids `.pbxproj` merge pain. The
+sandbox is disabled because the app spawns the Python worker subprocess and reads the
+recordings folder directly; sandboxing + notarization is explicitly deferred per
+`03_TECH_STACK.md` ("Do not block on perfect app signing/notarization") and
+`12_RISKS_AND_LIMITATIONS.md`.
+
+**Honesty note:** The Swift code has NOT been compiled or run (no macOS available in
+the build environment). It is written to be portable and is accompanied by a manual
+validation procedure in `docs/dev-guide.md`. macOS functionality must be verified by a
+human on an Apple Silicon Mac before being claimed as working.
+
+## D11 — Worker launch is shell-free
+**Choice:** `WorkerClient` launches the worker with `Process` using an explicit
+executable URL + argv array, never `/bin/sh -c`. The default executable is
+`/usr/bin/env` with leading arg `opencallnotes-worker` (resolved from `PATH`);
+Preferences let a developer point at `scripts/run-worker.sh` instead.
+
+**Reasoning:** Passing a fixed argv means user-entered session titles cannot inject
+shell commands (security requirement). `OPENCALLNOTES_HOME` is passed via the child
+environment, not interpolated into a command string.
