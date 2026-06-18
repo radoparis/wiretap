@@ -79,8 +79,12 @@ re-renders a single requested format on demand.
 **Reasoning:** Convenience for the UI (`06_UI_SPEC.md` shows all export buttons) at
 negligible cost; `export` remains available for re-generation.
 
-## D9 — License: MIT
-Per `10_DECISION_POLICY.md` default. (Repo already ships an MIT `LICENSE`.)
+## D9 — License: GNU GPL v3.0
+The spec (`10_DECISION_POLICY.md`) defaults to MIT, and earlier drafts of this repo's
+docs claimed MIT — but the `LICENSE` file actually committed in the initial commit is
+**GNU GPL v3.0**, and the project owner chose to **keep GPL‑3.0** (strong copyleft).
+All docs and `worker/pyproject.toml` are aligned to GPL‑3.0; the canonical spec under
+`wiretap-agent-docs/` is left unedited (it records the original MIT recommendation).
 
 ## D10 — Xcode project via XcodeGen; unsandboxed dev-mode app
 **Choice:** The Xcode project is defined by `app-macos/project.yml` and generated

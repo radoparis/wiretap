@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Local-first audio recording + on-device transcription worker for OpenCallNotes."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { text = "GPL-3.0-only" }
 authors = [{ name = "OpenCallNotes contributors" }]
 dependencies = [
     "typer>=0.12,<1.0",
