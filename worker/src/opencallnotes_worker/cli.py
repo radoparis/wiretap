@@ -16,7 +16,7 @@ import typer
 
 from . import audio, devices, export
 from .models import DEFAULT_MODEL
-from .paths import PathSafetyError
+from .paths import PathSafetyError, session_dir
 from .store import SessionNotFoundError, SessionStore, load_transcript_dict
 from .transcribe import TranscribeError, transcribe_session
 
@@ -133,6 +133,52 @@ def record_stop(
         }
 
     _run(json_out, produce, lambda p: f"recorded {p['session_id']} ({p['duration_seconds']}s)")
+
+
+@record_app.command("begin-call")
+def record_begin_call(
+    title: str = typer.Option("Untitled call", "--title"),
+    language: str = typer.Option("auto", "--language"),
+    model: str = typer.Option(DEFAULT_MODEL, "--model"),
+    json_out: bool = typer.Option(True, "--json/--no-json"),  # noqa: FBT001
+) -> None:
+    """Create a two-track call session and report where to write the audio."""
+
+    def produce() -> dict[str, Any]:
+        store = SessionStore()
+        session = audio.begin_call(
+            store, title=title, language=language, model=model,
+            now=datetime.now().astimezone(),
+        )
+        folder = session_dir(session.id)
+        return {
+            "session_id": session.id,
+            "status": session.status,
+            "dir": str(folder),
+            "mic_file": audio.CALL_MIC_FILE,
+            "system_file": audio.CALL_SYSTEM_FILE,
+        }
+
+    _run(json_out, produce, lambda p: f"call recording: {p['session_id']} -> {p['dir']}")
+
+
+@record_app.command("end-call")
+def record_end_call(
+    session_id: str = typer.Option(..., "--session-id"),
+    json_out: bool = typer.Option(True, "--json/--no-json"),  # noqa: FBT001
+) -> None:
+    """Finalize a call session after the app has written its audio tracks."""
+
+    def produce() -> dict[str, Any]:
+        store = SessionStore()
+        session = audio.end_call(store, session_id)
+        return {
+            "session_id": session.id,
+            "status": session.status,
+            "duration_seconds": session.duration_seconds,
+        }
+
+    _run(json_out, produce, lambda p: f"call recorded {p['session_id']} ({p['duration_seconds']}s)")
 
 
 @app.command(name="_record-run", hidden=True)

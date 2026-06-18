@@ -186,6 +186,49 @@ def recorder_command(
     return argv
 
 
+CALL_MIC_FILE = "mic.wav"
+CALL_SYSTEM_FILE = "system.wav"
+
+
+def begin_call(
+    store: SessionStore,
+    *,
+    title: str,
+    language: str,
+    model: str,
+    now: datetime,
+) -> Session:
+    """Create a two-track call session (mic = "Me", system = "Them"), status
+    ``recording``. The native app captures audio into the session folder, then
+    calls :func:`end_call`. The worker stays the source of truth for metadata."""
+    from .models import AudioTrack
+
+    session = Session(
+        id=new_session_id(title, now),
+        title=title,
+        created_at=now.isoformat(),
+        language=language,
+        model=model,
+        status="recording",
+        tracks=[
+            AudioTrack(file=CALL_MIC_FILE, speaker="Me"),
+            AudioTrack(file=CALL_SYSTEM_FILE, speaker="Them"),
+        ],
+    )
+    store.write_session(session, create_dir=True)
+    return session
+
+
+def end_call(store: SessionStore, session_id: str) -> Session:
+    """Finalize a call session: derive duration from the captured tracks."""
+    session = store.read_session(session_id)
+    folder = paths.session_dir(session_id)
+    durations = [wav_duration_seconds(folder / t.file) for t in session.effective_tracks()]
+    session.duration_seconds = round(max(durations) if durations else 0.0, 3)
+    session.status = "recorded"
+    return store.write_session(session)
+
+
 def run_recorder(session_id: str, *, device_id: str, samplerate: int, channels: int) -> None:
     """Recorder subprocess entrypoint: capture to ``audio.wav`` until signalled."""
     folder = paths.session_dir(session_id)
