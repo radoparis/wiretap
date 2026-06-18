@@ -15,7 +15,7 @@ permissions:
 jobs:
   build:
     name: Build & package OpenCallNotes.app
-    runs-on: macos-14  # Apple Silicon
+    runs-on: macos-15  # Apple Silicon; ships Xcode 16 (XcodeGen emits project format 77)
     timeout-minutes: 60
     steps:
       - name: Checkout
@@ -27,8 +27,10 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Select Xcode
-        run: sudo xcode-select -switch /Applications/Xcode.app
+      - name: Select latest stable Xcode (project format 77 needs Xcode 16+)
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: Derive version
         id: version
