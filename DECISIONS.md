@@ -170,3 +170,30 @@ the bundle self-contained.
   `--exclude-module`s torch/torchvision/torchaudio/tensorboard to roughly halve the
   DMG. If transcription ever fails with a torch `ImportError`, remove the matching
   exclude.
+
+## D14 — v0.2 call capture: native ScreenCaptureKit, worker stays metadata owner
+**Choice:** Capturing a whole call needs system audio, which `sounddevice` cannot get
+on macOS. So call recording is done in **native Swift**: `CallRecorder` captures the
+**microphone** (AVAudioEngine) and **system/call audio** (ScreenCaptureKit) into two
+16 kHz mono WAVs. The Python worker still owns session metadata via two new commands —
+`record begin-call` (creates the two-track session, returns the dir + filenames to
+write) and `record end-call` (finalizes duration/status). The worker then transcribes
+each track and labels segments **"Me"** (mic) / **"Them"** (system), merged
+chronologically (D-phase-1).
+
+**Alternatives:** (a) BlackHole + an Aggregate Device — rejected as "useless
+reconfiguration" for users; (b) doing capture in the worker — impossible, no system-
+audio API in PortAudio on macOS.
+
+**Reasoning:** ScreenCaptureKit is the native, no-setup way to capture system audio
+(macOS 13+). Keeping the worker as the single source of truth for `session.json`
+avoids duplicating the id/schema logic in Swift — the app only writes audio files into
+paths the worker hands it. Two channels (mic vs system) give speaker separation for
+free, with no diarization model.
+
+**Honesty notes:** the worker side (begin/end-call, multi-track labeling) is unit-
+tested on Linux. The **Swift capture is unverified** (no macOS here): ScreenCaptureKit
+audio, the `CMSampleBuffer`→WAV conversion, and the 48 kHz→16 kHz resample are exactly
+what needs on-device iteration. System-audio capture requires the user to grant the
+**Screen Recording** permission (System Settings → Privacy & Security). Sandbox-free
+dev build (D10) means no extra entitlement is needed.

@@ -86,7 +86,14 @@ struct SessionDetailView: View {
                             .font(.system(.caption, design: .monospaced))
                             .foregroundStyle(.secondary)
                             .frame(width: 48, alignment: .leading)
-                        Text(segment.text).textSelection(.enabled)
+                        VStack(alignment: .leading, spacing: 1) {
+                            if let speaker = segment.speaker {
+                                Text(speaker)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(speaker == "Me" ? .blue : .green)
+                            }
+                            Text(segment.text).textSelection(.enabled)
+                        }
                     }
                 }
                 if transcript.segments.isEmpty {

@@ -6,6 +6,7 @@ struct TranscriptSegment: Codable, Identifiable, Hashable {
     let start: Double
     let end: Double
     let text: String
+    let speaker: String?
 
     /// `mm:ss` start timestamp for display.
     var startTimestamp: String {

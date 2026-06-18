@@ -6,10 +6,17 @@ struct RecordingPanel: View {
     @EnvironmentObject private var store: SessionStore
     @EnvironmentObject private var preferences: Preferences
 
+    enum RecordMode: String, CaseIterable, Identifiable {
+        case me = "Just me"
+        case call = "Call (mic + system)"
+        var id: String { rawValue }
+    }
+
     @State private var title: String = ""
     @State private var deviceID: String = ""
     @State private var language: String = "auto"
     @State private var model: String = Preferences.models[0]
+    @State private var mode: RecordMode = .me
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -27,15 +34,29 @@ struct RecordingPanel: View {
                 .textFieldStyle(.roundedBorder)
                 .disabled(store.isRecording)
 
-            Picker("Input", selection: $deviceID) {
-                if store.devices.isEmpty {
-                    Text("No input devices").tag("")
-                }
-                ForEach(store.devices) { device in
-                    Text("\(device.name) (\(device.inputChannels)ch)").tag(device.id)
-                }
+            Picker("Mode", selection: $mode) {
+                ForEach(RecordMode.allCases) { Text($0.rawValue).tag($0) }
             }
+            .pickerStyle(.segmented)
             .disabled(store.isRecording)
+
+            if mode == .me {
+                Picker("Input", selection: $deviceID) {
+                    if store.devices.isEmpty {
+                        Text("No input devices").tag("")
+                    }
+                    ForEach(store.devices) { device in
+                        Text("\(device.name) (\(device.inputChannels)ch)").tag(device.id)
+                    }
+                }
+                .disabled(store.isRecording)
+            } else {
+                Text("Records your microphone (\"Me\") and the call's audio (\"Them\") "
+                    + "as separate tracks, then labels who said what. Needs the Screen "
+                    + "Recording permission (System Settings → Privacy & Security).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             Picker("Language", selection: $language) {
                 ForEach(Preferences.languages, id: \.self) { Text($0.capitalized).tag($0) }
@@ -96,17 +117,24 @@ struct RecordingPanel: View {
         } else {
             Button {
                 Task {
-                    await store.startRecording(
-                        deviceID: deviceID, title: title, language: language, model: model
-                    )
+                    if mode == .call {
+                        await store.startCallRecording(
+                            title: title, language: language, model: model
+                        )
+                    } else {
+                        await store.startRecording(
+                            deviceID: deviceID, title: title, language: language, model: model
+                        )
+                    }
                 }
             } label: {
-                Label("Start Recording", systemImage: "record.circle")
+                Label(mode == .call ? "Start Call Recording" : "Start Recording",
+                      systemImage: "record.circle")
                     .frame(maxWidth: .infinity)
             }
             .controlSize(.large)
             .buttonStyle(.borderedProminent)
-            .disabled(deviceID.isEmpty || store.isBusy)
+            .disabled((mode == .me && deviceID.isEmpty) || store.isBusy)
             .keyboardShortcut(.return)
         }
     }

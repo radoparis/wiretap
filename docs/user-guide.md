@@ -13,13 +13,22 @@ account, no cloud upload.
 
 ## Recording
 
-1. Type a **session title**.
-2. Choose an **input device**:
-   - Your microphone for in-room audio.
-   - **BlackHole 2ch** (or an aggregate device) to capture system/call audio — see
-     "System audio" below.
-3. Click **Start Recording**. A red timer shows elapsed time.
-4. Click **Stop Recording**. The session appears in the list.
+Pick a **mode**:
+
+### Just me (v0.1)
+1. Type a **session title** and choose your **microphone**.
+2. Click **Start Recording**. A red timer shows elapsed time.
+3. Click **Stop Recording**. The session appears in the list.
+
+### Call — mic + system (v0.2)
+Records **both sides of a call** with no BlackHole setup: your microphone as **"Me"**
+and the call's audio as **"Them"**, on separate tracks. The transcript is then labeled
+by speaker.
+1. Switch the mode to **Call (mic + system)** and title it.
+2. Click **Start Call Recording**. The first time, macOS asks for the **Screen
+   Recording** permission — grant it in System Settings → Privacy & Security → Screen
+   Recording, then start again.
+3. Click **Stop**. Transcribe to get a **Me / Them** labeled transcript.
 
 > OpenCallNotes records audio locally on your Mac. Make sure you have the right to
 > record the conversation under the laws and rules that apply to you.

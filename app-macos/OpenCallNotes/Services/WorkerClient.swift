@@ -28,6 +28,22 @@ struct RecordStopResult: Decodable {
     }
 }
 
+struct BeginCallResult: Decodable {
+    let sessionId: String
+    let dir: String
+    let micFile: String
+    let systemFile: String
+    enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case dir
+        case micFile = "mic_file"
+        case systemFile = "system_file"
+    }
+
+    var micURL: URL { URL(fileURLWithPath: dir).appendingPathComponent(micFile) }
+    var systemURL: URL { URL(fileURLWithPath: dir).appendingPathComponent(systemFile) }
+}
+
 struct TranscribeResult: Decodable {
     let sessionId: String
     let status: String
@@ -83,6 +99,22 @@ final class WorkerClient {
     func stopRecording(sessionId: String) async throws -> RecordStopResult {
         try await run(RecordStopResult.self, [
             "record", "stop", "--session-id", sessionId, "--json",
+        ])
+    }
+
+    func beginCall(title: String, language: String, model: String) async throws -> BeginCallResult {
+        try await run(BeginCallResult.self, [
+            "record", "begin-call",
+            "--title", title,
+            "--language", language,
+            "--model", model,
+            "--json",
+        ])
+    }
+
+    func endCall(sessionId: String) async throws -> RecordStopResult {
+        try await run(RecordStopResult.self, [
+            "record", "end-call", "--session-id", sessionId, "--json",
         ])
     }
 

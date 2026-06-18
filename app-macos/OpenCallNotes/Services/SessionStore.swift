@@ -10,8 +10,10 @@ final class SessionStore: ObservableObject {
     @Published var detail: SessionDetail?
 
     @Published var isRecording = false
+    @Published var isCallRecording = false
     @Published var recordingSessionID: String?
     @Published var recordingStartDate: Date?
+    private var callRecorder: CallRecorder?
 
     @Published var isBusy = false
     @Published var statusMessage: String?
@@ -68,13 +70,45 @@ final class SessionStore: ObservableObject {
         await refreshSessions()
     }
 
+    /// Record a call: mic ("Me") + system audio ("Them") via ScreenCaptureKit.
+    func startCallRecording(title: String, language: String, model: String) async {
+        let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        await guarded("Starting call recording") {
+            let begin = try await self.worker.beginCall(
+                title: cleanTitle.isEmpty ? "Untitled call" : cleanTitle,
+                language: language,
+                model: model
+            )
+            let recorder = CallRecorder()
+            try await recorder.start(micURL: begin.micURL, systemURL: begin.systemURL)
+            self.callRecorder = recorder
+            self.isRecording = true
+            self.isCallRecording = true
+            self.recordingSessionID = begin.sessionId
+            self.recordingStartDate = Date()
+        }
+        await refreshSessions()
+    }
+
     func stopRecording() async {
         guard let id = recordingSessionID else { return }
-        await guarded("Stopping recording") {
-            _ = try await self.worker.stopRecording(sessionId: id)
-            self.isRecording = false
-            self.recordingSessionID = nil
-            self.recordingStartDate = nil
+        if isCallRecording {
+            await guarded("Stopping call recording") {
+                await self.callRecorder?.stop()
+                self.callRecorder = nil
+                _ = try await self.worker.endCall(sessionId: id)
+                self.isRecording = false
+                self.isCallRecording = false
+                self.recordingSessionID = nil
+                self.recordingStartDate = nil
+            }
+        } else {
+            await guarded("Stopping recording") {
+                _ = try await self.worker.stopRecording(sessionId: id)
+                self.isRecording = false
+                self.recordingSessionID = nil
+                self.recordingStartDate = nil
+            }
         }
         await refreshSessions()
         await selectSession(id)
