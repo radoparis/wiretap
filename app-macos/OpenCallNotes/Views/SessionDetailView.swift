@@ -12,6 +12,9 @@ struct SessionDetailView: View {
                 header
                 Divider()
                 actions
+                if let progress = store.transcriptionProgress {
+                    transcriptionProgress(progress)
+                }
                 Divider()
                 transcriptSection
             }
@@ -54,6 +57,20 @@ struct SessionDetailView: View {
                 .disabled(!detail.transcriptAvailable || store.isBusy)
             }
         }
+    }
+
+    @ViewBuilder private func transcriptionProgress(_ progress: Double) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ProgressView(value: progress)
+            if progress <= 0 {
+                Text("Preparing… first run downloads the model (~1.5 GB), then "
+                    + "transcription begins.")
+            } else {
+                Text("Transcribing… \(Int(progress * 100))%")
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
     }
 
     @ViewBuilder private var transcriptSection: some View {

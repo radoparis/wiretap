@@ -107,4 +107,11 @@ final class Preferences: ObservableObject {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return appSupport.appendingPathComponent("OpenCallNotes/recordings")
     }
+
+    /// The worker's live progress file for a session (polled during transcription).
+    func progressURL(sessionID: String) -> URL {
+        resolvedRecordingsURL
+            .appendingPathComponent(sessionID)
+            .appendingPathComponent("transcribe.progress")
+    }
 }

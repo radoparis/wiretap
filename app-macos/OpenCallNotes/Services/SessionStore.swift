@@ -17,6 +17,9 @@ final class SessionStore: ObservableObject {
     @Published var statusMessage: String?
     @Published var errorMessage: String?
 
+    /// Live transcription progress in 0...1 while a transcribe is running, else nil.
+    @Published var transcriptionProgress: Double?
+
     let preferences: Preferences
     private let worker: WorkerClient
 
@@ -81,6 +84,8 @@ final class SessionStore: ObservableObject {
 
     func transcribeSelected() async {
         guard let id = selectedSessionID else { return }
+        transcriptionProgress = 0
+        let poller = Task { await pollTranscriptionProgress(sessionID: id) }
         await guarded("Transcribing (this can take a while)") {
             _ = try await self.worker.transcribe(
                 sessionId: id,
@@ -89,7 +94,21 @@ final class SessionStore: ObservableObject {
             )
             self.detail = try await self.worker.getSession(id)
         }
+        poller.cancel()
+        transcriptionProgress = nil
         await refreshSessions()
+    }
+
+    /// Poll the worker's progress file while a blocking transcribe runs.
+    private func pollTranscriptionProgress(sessionID: String) async {
+        let url = preferences.progressURL(sessionID: sessionID)
+        while !Task.isCancelled {
+            if let data = try? Data(contentsOf: url),
+               let progress = try? JSONDecoder().decode(TranscribeProgress.self, from: data) {
+                transcriptionProgress = progress.fraction
+            }
+            try? await Task.sleep(nanoseconds: 400_000_000)  // 0.4s
+        }
     }
 
     func exportSelected(format: String) async {

@@ -111,3 +111,25 @@ Preferences let a developer point at `scripts/run-worker.sh` instead.
 **Reasoning:** Passing a fixed argv means user-entered session titles cannot inject
 shell commands (security requirement). `OPENCALLNOTES_HOME` is passed via the child
 environment, not interpolated into a command string.
+
+## D12 — Transcription progress via a polled progress file
+**Choice:** `transcribe` is a single blocking call, so for live progress the worker
+runs Whisper with `verbose=True`, captures the per-segment lines it prints (keeping the
+worker's real stdout a clean JSON object), parses each segment's end timestamp, and
+writes `<session>/transcribe.progress` = `{processed_seconds, total_seconds, fraction}`.
+The app polls that file (every 0.4s) during the call and shows a determinate progress
+bar. Progress = processed audio seconds ÷ total duration.
+
+**Alternatives:** (a) streaming incremental JSON from the worker — breaks the
+one-object-per-call contract; (b) chunking the audio ourselves to report progress —
+risks cutting words mid-segment and degrading accuracy; (c) an indeterminate spinner —
+poor UX for long meetings.
+
+**Reasoning:** A file poll is the simplest thing that yields *true* progress without
+changing the CLI contract or touching transcription quality. It degrades gracefully:
+if the verbose format is unrecognized the bar simply stays at 0% (the call still works).
+During the first-run model download no segments are emitted, so the UI shows a
+"Preparing… first run downloads the model" message while the fraction is 0.
+
+**Honesty note:** the fake backend's progress path is unit-tested on Linux; the MLX
+stdout-parsing path could not be verified on Apple Silicon here and is best-effort.
