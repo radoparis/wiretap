@@ -23,6 +23,17 @@ class Device(BaseModel):
     input_channels: int
 
 
+class AudioTrack(BaseModel):
+    """One audio track of a session, optionally tied to a speaker label (v0.2).
+
+    A call records two tracks — the microphone ("Me") and system/call audio
+    ("Them"). Single-track sessions (v0.1) use ``Session.audio_file`` instead.
+    """
+
+    file: str
+    speaker: str | None = None
+
+
 class Session(BaseModel):
     """Session metadata, persisted as ``session.json`` (canonical, see D4)."""
 
@@ -31,9 +42,15 @@ class Session(BaseModel):
     created_at: str
     duration_seconds: float = 0.0
     audio_file: str = "audio.wav"
+    tracks: list[AudioTrack] = Field(default_factory=list)
     language: str = "auto"
     model: str = DEFAULT_MODEL
     status: SessionStatus = "recording"
+
+    def effective_tracks(self) -> list[AudioTrack]:
+        """Tracks to transcribe: the explicit multi-track list, or the single
+        legacy ``audio_file`` when none are set (back-compatible)."""
+        return self.tracks or [AudioTrack(file=self.audio_file, speaker=None)]
 
 
 class TranscriptSegment(BaseModel):
@@ -43,6 +60,7 @@ class TranscriptSegment(BaseModel):
     start: float
     end: float
     text: str
+    speaker: str | None = None
 
 
 class Transcript(BaseModel):

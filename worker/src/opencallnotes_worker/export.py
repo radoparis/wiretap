@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from . import paths
-from .models import Transcript
+from .models import Transcript, TranscriptSegment
 
 FORMATS = ("txt", "md", "srt", "json")
 _EXTENSION = {"txt": "txt", "md": "md", "srt": "srt", "json": "json"}
@@ -26,9 +26,14 @@ def _format_timestamp(seconds: float) -> str:
     return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
 
 
+def _speaker_text(seg: TranscriptSegment) -> str:
+    """Segment text, prefixed with the speaker label when present (v0.2)."""
+    return f"{seg.speaker}: {seg.text}" if seg.speaker else seg.text
+
+
 def render_txt(transcript: Transcript) -> str:
     if transcript.segments:
-        return "\n".join(seg.text for seg in transcript.segments) + "\n"
+        return "\n".join(_speaker_text(seg) for seg in transcript.segments) + "\n"
     return transcript.text + ("\n" if transcript.text else "")
 
 
@@ -41,7 +46,8 @@ def render_md(transcript: Transcript) -> str:
     if transcript.segments:
         for seg in transcript.segments:
             stamp = _format_timestamp(seg.start)
-            lines.append(f"**[{stamp}]** {seg.text}")
+            speaker = f" {seg.speaker}:" if seg.speaker else ""
+            lines.append(f"**[{stamp}]{speaker}** {seg.text}")
             lines.append("")
     else:
         lines.append(transcript.text)
@@ -54,7 +60,7 @@ def render_srt(transcript: Transcript) -> str:
     for index, seg in enumerate(transcript.segments, start=1):
         start = _format_timestamp(seg.start)
         end = _format_timestamp(seg.end)
-        blocks.append(f"{index}\n{start} --> {end}\n{seg.text}\n")
+        blocks.append(f"{index}\n{start} --> {end}\n{_speaker_text(seg)}\n")
     return "\n".join(blocks)
 
 

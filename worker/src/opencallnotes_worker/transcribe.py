@@ -15,7 +15,7 @@ from typing import Protocol
 
 from . import paths
 from .audio import wav_duration_seconds
-from .models import Transcript, TranscriptSegment
+from .models import AudioTrack, Transcript, TranscriptSegment
 from .progress import (
     ProgressCallback,
     StdoutProgressParser,
@@ -147,14 +147,23 @@ def transcribe_session(
     model: str | None = None,
     language: str | None = None,
 ) -> Transcript:
-    """Transcribe a recorded session and persist ``transcript.json`` (+ exports)."""
+    """Transcribe a recorded session and persist ``transcript.json`` (+ exports).
+
+    A session may have one track (v0.1 mic recording) or several (v0.2 call:
+    mic = "Me", system = "Them"). Each track is transcribed independently, its
+    segments tagged with the track's speaker label, and all segments merged in
+    chronological order.
+    """
     from .export import write_all_exports  # local import avoids a cycle
 
     session = store.read_session(session_id)
     folder = paths.session_dir(session_id)
-    audio_path = folder / session.audio_file
-    if not audio_path.exists():
-        raise TranscribeError(f"audio file missing for session {session_id}")
+    tracks = session.effective_tracks()
+    for track in tracks:
+        if not (folder / track.file).exists():
+            raise TranscribeError(
+                f"audio file missing for session {session_id}: {track.file}"
+            )
 
     chosen_model = model or session.model
     chosen_language = language or session.language
@@ -164,15 +173,13 @@ def transcribe_session(
     session.language = chosen_language
     store.write_session(session)
 
-    def report(processed: float, total: float) -> None:
-        write_progress(folder, processed, total)
+    durations = [wav_duration_seconds(folder / t.file) for t in tracks]
+    grand_total = sum(durations) or 1.0
 
     try:
-        transcript = get_backend().transcribe(
-            audio_path=audio_path,
-            model=chosen_model,
-            language=chosen_language,
-            progress=report,
+        merged = _transcribe_tracks(
+            folder, tracks, durations, grand_total,
+            model=chosen_model, language=chosen_language,
         )
     except Exception:
         session.status = "failed"
@@ -181,12 +188,61 @@ def transcribe_session(
     finally:
         clear_progress(folder)
 
-    (folder / "transcript.json").write_text(
-        transcript.model_dump_json(indent=2), encoding="utf-8"
-    )
-    write_all_exports(session_id, transcript)
+    (folder / "transcript.json").write_text(merged.model_dump_json(indent=2), encoding="utf-8")
+    write_all_exports(session_id, merged)
 
     session.status = "transcribed"
-    session.language = transcript.language
+    session.language = merged.language
     store.write_session(session)
-    return transcript
+    return merged
+
+
+def _transcribe_tracks(
+    folder: Path,
+    tracks: list[AudioTrack],
+    durations: list[float],
+    grand_total: float,
+    *,
+    model: str,
+    language: str,
+) -> Transcript:
+    """Transcribe each track, label segments by speaker, merge chronologically."""
+    backend = get_backend()
+    segments: list[TranscriptSegment] = []
+    languages: list[str] = []
+    for track, base in zip(tracks, _prefix_sums(durations), strict=True):
+        def report(processed: float, _total: float, base: float = base) -> None:
+            write_progress(folder, base + processed, grand_total)
+
+        result = backend.transcribe(
+            audio_path=folder / track.file, model=model, language=language, progress=report,
+        )
+        languages.append(result.language)
+        for seg in result.segments:
+            seg.speaker = track.speaker
+            segments.append(seg)
+
+    segments.sort(key=lambda s: (s.start, s.end))
+    for index, seg in enumerate(segments):
+        seg.id = index
+
+    def line(seg: TranscriptSegment) -> str:
+        return f"{seg.speaker}: {seg.text}" if seg.speaker else seg.text
+
+    return Transcript(
+        language=languages[0] if languages else language,
+        model=model,
+        duration_seconds=max(durations) if durations else 0.0,
+        text="\n".join(line(s) for s in segments),
+        segments=segments,
+    )
+
+
+def _prefix_sums(values: list[float]) -> list[float]:
+    """Running total *before* each element: [0, v0, v0+v1, ...]."""
+    out: list[float] = []
+    running = 0.0
+    for value in values:
+        out.append(running)
+        running += value
+    return out
