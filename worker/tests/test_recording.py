@@ -2,14 +2,33 @@
 
 from __future__ import annotations
 
+import sys
 import wave
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
+import pytest
+
 from opencallnotes_worker import audio, paths
 from opencallnotes_worker.audio import SyntheticRecorder, wav_duration_seconds
 from opencallnotes_worker.store import SessionStore
+
+
+def test_recorder_command_from_source_uses_dash_m(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delattr(sys, "frozen", raising=False)
+    cmd = audio.recorder_command("sid", device_id="0", samplerate=16000, channels=1)
+    assert cmd[1:3] == ["-m", "opencallnotes_worker"]
+    assert cmd[3] == "_record-run"
+    assert "--session-id" in cmd and "sid" in cmd
+
+
+def test_recorder_command_when_frozen_omits_dash_m(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Simulate a PyInstaller frozen binary: sys.executable IS the worker CLI.
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    cmd = audio.recorder_command("sid", device_id="synthetic", samplerate=16000, channels=1)
+    assert "-m" not in cmd
+    assert cmd[1] == "_record-run"  # subcommand directly after the binary
 
 
 def test_synthetic_recorder_writes_frames(tmp_path: Path) -> None:

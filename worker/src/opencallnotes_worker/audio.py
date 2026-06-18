@@ -151,26 +151,39 @@ def start_recording(
     with log_path.open("wb") as log:
         # No shell, fixed argv -> no shell injection (security requirement).
         proc = subprocess.Popen(  # noqa: S603
-            [
-                sys.executable,
-                "-m",
-                "opencallnotes_worker",
-                "_record-run",
-                "--session-id",
-                session.id,
-                "--device-id",
-                device_id,
-                "--samplerate",
-                str(samplerate),
-                "--channels",
-                str(channels),
-            ],
+            recorder_command(
+                session.id, device_id=device_id, samplerate=samplerate, channels=channels
+            ),
             stdout=log,
             stderr=subprocess.STDOUT,
             start_new_session=True,
         )
     (folder / _PID_FILE).write_text(str(proc.pid), encoding="utf-8")
     return session
+
+
+def recorder_command(
+    session_id: str, *, device_id: str, samplerate: int, channels: int
+) -> list[str]:
+    """Build the argv that relaunches this worker as the recorder subprocess.
+
+    When running from source, ``sys.executable`` is a Python interpreter, so we
+    relaunch via ``-m opencallnotes_worker``. When running as a PyInstaller
+    *frozen* binary, ``sys.executable`` is the worker binary itself and already
+    dispatches CLI subcommands, so ``-m`` must NOT be passed (it would be parsed
+    as a bad argument and the recorder would never start).
+    """
+    argv = [sys.executable]
+    if not getattr(sys, "frozen", False):
+        argv += ["-m", "opencallnotes_worker"]
+    argv += [
+        "_record-run",
+        "--session-id", session_id,
+        "--device-id", device_id,
+        "--samplerate", str(samplerate),
+        "--channels", str(channels),
+    ]
+    return argv
 
 
 def run_recorder(session_id: str, *, device_id: str, samplerate: int, channels: int) -> None:
