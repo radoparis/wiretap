@@ -26,6 +26,20 @@ struct ContentView: View {
         }
         .overlay(alignment: .bottom) { statusBar }
         .privacyFooter()
+        .alert(
+            "Worker error",
+            isPresented: Binding(
+                get: { store.errorMessage != nil },
+                set: { if !$0 { store.errorMessage = nil } }
+            ),
+            presenting: store.errorMessage
+        ) { _ in
+            Button("Retry") { Task { await store.refreshDevices(); await store.refreshSessions() } }
+            Button("OK", role: .cancel) {}
+        } message: { message in
+            Text(message + "\n\nCheck the Worker path in Settings (⌘,). For a source "
+                + "checkout, point it at scripts/run-worker.sh.")
+        }
     }
 
     @ViewBuilder private var statusBar: some View {

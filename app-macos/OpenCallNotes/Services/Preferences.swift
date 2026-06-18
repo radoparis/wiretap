@@ -73,11 +73,29 @@ final class Preferences: ObservableObject {
         }
 
         var env = ProcessInfo.processInfo.environment
+        env["PATH"] = Preferences.augmentedPath(env["PATH"])
         let folder = recordingsFolder.trimmingCharacters(in: .whitespaces)
         if !folder.isEmpty {
             env["OPENCALLNOTES_HOME"] = folder
         }
         return LaunchConfig(executablePath: executable, leadingArgs: leading, environment: env)
+    }
+
+    /// A GUI app launched from Finder/Xcode inherits only a minimal `PATH`
+    /// (`/usr/bin:/bin:/usr/sbin:/sbin`), so `opencallnotes-worker`, `uv`, and
+    /// `ffmpeg` from Homebrew / uv installs are not found. Prepend the common
+    /// locations so the worker (and the tools it shells out to) resolve.
+    static func augmentedPath(_ existing: String?) -> String {
+        let extras = [
+            "/opt/homebrew/bin",            // Apple Silicon Homebrew
+            "/opt/homebrew/sbin",
+            "/usr/local/bin",               // Intel Homebrew
+            "\(NSHomeDirectory())/.local/bin",   // uv / pipx user installs
+            "\(NSHomeDirectory())/.cargo/bin",
+        ]
+        var seen = Set<String>()
+        let current = (existing ?? "/usr/bin:/bin:/usr/sbin:/sbin").split(separator: ":").map(String.init)
+        return (extras + current).filter { seen.insert($0).inserted }.joined(separator: ":")
     }
 
     /// The folder the worker stores recordings in (for "Open recordings folder").

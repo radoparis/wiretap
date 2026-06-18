@@ -60,8 +60,15 @@ sync --extra audio --extra mlx`.
    ./scripts/run-worker.sh devices --json      # lists your real input devices
    ```
 2. **Build the app**: `./scripts/run-app-dev.sh`, then Build & Run in Xcode.
-3. **Configure**: Settings (Cmd-,) → Worker path = absolute path to
-   `scripts/run-worker.sh`, leading args empty.
+3. **Configure**: Settings (Cmd-,) → **Worker path**, leading args empty. Either:
+   - the absolute path to `scripts/run-worker.sh` (runs the worker via `uv`), or
+   - the most robust option, the venv binary directly:
+     `<repo>/worker/.venv/bin/opencallnotes-worker` (no `uv`/PATH needed).
+
+   > GUI apps launched from Finder/Xcode get a minimal `PATH`, so a bare
+   > `opencallnotes-worker` (the default) usually won't resolve. The app augments
+   > the worker's `PATH` with Homebrew / `~/.local/bin` (so `run-worker.sh`'s `uv`
+   > and `ffmpeg` resolve), but pointing at an absolute path is the safest.
 4. **Record**: choose your microphone, title it, **Start Recording**, speak ~30s,
    **Stop Recording**. Grant the microphone permission prompt. Confirm the session
    appears.

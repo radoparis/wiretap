@@ -65,14 +65,22 @@ struct RecordingPanel: View {
             .buttonStyle(.link)
 
             if store.devices.isEmpty {
-                Text("System audio capture requires BlackHole or an aggregate input "
-                    + "device in MVP.")
+                Text("No input devices. If you have a microphone, the worker may not be "
+                    + "reachable — check the Worker path in Settings (⌘,). System audio "
+                    + "capture additionally requires BlackHole or an aggregate device.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
         .padding()
         .onAppear(perform: applyDefaults)
+        .onChange(of: store.devices) { _, devices in
+            // Devices load asynchronously after the view appears; select the
+            // first one once the list arrives.
+            if deviceID.isEmpty || !devices.contains(where: { $0.id == deviceID }) {
+                deviceID = devices.first?.id ?? ""
+            }
+        }
     }
 
     @ViewBuilder private var primaryButton: some View {
