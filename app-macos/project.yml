@@ -1,0 +1,48 @@
+# XcodeGen project definition (https://github.com/yonaskolb/XcodeGen).
+#
+# This YAML is the source of truth for the Xcode project. The committed
+# .xcodeproj is generated from it, so it never drifts and is trivial to review.
+#
+#   brew install xcodegen
+#   cd app-macos && xcodegen generate
+#   open OpenCallNotes.xcodeproj
+#
+# See ../scripts/run-app-dev.sh for a one-shot generate-and-open helper.
+name: OpenCallNotes
+options:
+  bundleIdPrefix: org.opencallnotes
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    PRODUCT_NAME: OpenCallNotes
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_HARDENED_RUNTIME: YES
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  OpenCallNotes:
+    type: application
+    platform: macOS
+    sources:
+      - path: OpenCallNotes
+    info:
+      path: OpenCallNotes/Info.plist
+      properties:
+        CFBundleDisplayName: OpenCallNotes
+        CFBundleShortVersionString: "0.1.0"
+        LSMinimumSystemVersion: "14.0"
+        NSHighResolutionCapable: true
+        # Required so macOS prompts for microphone access (TCC).
+        NSMicrophoneUsageDescription: >-
+          OpenCallNotes records audio locally on your Mac to create transcripts.
+          Audio never leaves your machine.
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: OpenCallNotes/OpenCallNotes.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: org.opencallnotes.OpenCallNotes
