@@ -1,7 +1,7 @@
 # Architecture (as built)
 
 This summarizes the **implemented** architecture. The canonical design lives in
-[`../wiretap-agent-docs/02_ARCHITECTURE.md`](../wiretap-agent-docs/02_ARCHITECTURE.md);
+[`../opencallnotes-agent-docs/02_ARCHITECTURE.md`](../opencallnotes-agent-docs/02_ARCHITECTURE.md);
 build-time choices are in [`../DECISIONS.md`](../DECISIONS.md).
 
 ```

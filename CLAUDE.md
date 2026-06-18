@@ -1,12 +1,12 @@
 CLAUDE.md
 
-Wiretap Development Instructions
+OpenCallNotes Development Instructions
 
 This repository is designed for fully autonomous development.
 
 The complete product specification already exists in:
 
-wiretap-agent-docs/
+opencallnotes-agent-docs/
 
 Treat those documents as canonical.
 
@@ -18,20 +18,20 @@ Canonical Documentation
 
 Always use the following documents as the source of truth.
 
-wiretap-agent-docs/00_AGENT_MISSION.md
-wiretap-agent-docs/01_PRODUCT_SPEC.md
-wiretap-agent-docs/02_ARCHITECTURE.md
-wiretap-agent-docs/03_TECH_STACK.md
-wiretap-agent-docs/04_REPO_STRUCTURE.md
-wiretap-agent-docs/05_WORKER_API.md
-wiretap-agent-docs/06_UI_SPEC.md
-wiretap-agent-docs/07_IMPLEMENTATION_PLAN.md
-wiretap-agent-docs/08_TASKS_FOR_AGENT.md
-wiretap-agent-docs/09_DEFINITION_OF_DONE.md
-wiretap-agent-docs/10_DECISION_POLICY.md
-wiretap-agent-docs/11_README_DRAFT.md
-wiretap-agent-docs/12_RISKS_AND_LIMITATIONS.md
-wiretap-agent-docs/13_PROMPT_FOR_AGENT.md
+opencallnotes-agent-docs/00_AGENT_MISSION.md
+opencallnotes-agent-docs/01_PRODUCT_SPEC.md
+opencallnotes-agent-docs/02_ARCHITECTURE.md
+opencallnotes-agent-docs/03_TECH_STACK.md
+opencallnotes-agent-docs/04_REPO_STRUCTURE.md
+opencallnotes-agent-docs/05_WORKER_API.md
+opencallnotes-agent-docs/06_UI_SPEC.md
+opencallnotes-agent-docs/07_IMPLEMENTATION_PLAN.md
+opencallnotes-agent-docs/08_TASKS_FOR_AGENT.md
+opencallnotes-agent-docs/09_DEFINITION_OF_DONE.md
+opencallnotes-agent-docs/10_DECISION_POLICY.md
+opencallnotes-agent-docs/11_README_DRAFT.md
+opencallnotes-agent-docs/12_RISKS_AND_LIMITATIONS.md
+opencallnotes-agent-docs/13_PROMPT_FOR_AGENT.md
 
 If multiple documents overlap, prefer the most specific one.
 

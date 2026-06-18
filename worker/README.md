@@ -2,7 +2,7 @@
 
 The local recording + on-device transcription worker for
 [OpenCallNotes](../README.md). It is a small `typer` CLI that the macOS SwiftUI app
-drives as a subprocess over a JSON contract (see `../wiretap-agent-docs/05_WORKER_API.md`).
+drives as a subprocess over a JSON contract (see `../opencallnotes-agent-docs/05_WORKER_API.md`).
 
 ## Install
 

@@ -1,7 +1,7 @@
 # Decisions
 
 This file records the non-obvious product/technical decisions made while building
-OpenCallNotes autonomously, per `wiretap-agent-docs/10_DECISION_POLICY.md`. Each
+OpenCallNotes autonomously, per `opencallnotes-agent-docs/10_DECISION_POLICY.md`. Each
 entry states the choice, the alternatives considered, and the reasoning.
 
 ## D1 — Recording across stateless `record start` / `record stop` invocations
@@ -84,7 +84,7 @@ The spec (`10_DECISION_POLICY.md`) defaults to MIT, and earlier drafts of this r
 docs claimed MIT — but the `LICENSE` file actually committed in the initial commit is
 **GNU GPL v3.0**, and the project owner chose to **keep GPL‑3.0** (strong copyleft).
 All docs and `worker/pyproject.toml` are aligned to GPL‑3.0; the canonical spec under
-`wiretap-agent-docs/` is left unedited (it records the original MIT recommendation).
+`opencallnotes-agent-docs/` is left unedited (it records the original MIT recommendation).
 
 ## D10 — Xcode project via XcodeGen; unsandboxed dev-mode app
 **Choice:** The Xcode project is defined by `app-macos/project.yml` and generated

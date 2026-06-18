@@ -13,7 +13,7 @@ transcripts on your Mac — no paid APIs, no cloud upload.
 
 OpenCallNotes was implemented **fully autonomously by a Claude agent**
 (Anthropic's Claude Opus 4.8), working from the product and architecture specification
-in [`wiretap-agent-docs/`](wiretap-agent-docs/), which was **authored by GPT‑5.5**. The
+in [`opencallnotes-agent-docs/`](opencallnotes-agent-docs/), which was **authored by GPT‑5.5**. The
 agent read the spec, made and documented its own implementation decisions
 ([`DECISIONS.md`](DECISIONS.md)), wrote all of the code and tests, and ran the quality
 gates. The human's role — as the spec itself defined — was to run the app on macOS,

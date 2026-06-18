@@ -83,5 +83,5 @@ Report any failure with the exact command/output per `10_DECISION_POLICY.md`.
 
 Every command prints exactly one JSON object to stdout. Failures print
 `{"error": {"code", "message"}}` and exit non-zero. See
-`../wiretap-agent-docs/05_WORKER_API.md` and `worker/tests/test_cli.py` for the
+`../opencallnotes-agent-docs/05_WORKER_API.md` and `worker/tests/test_cli.py` for the
 exercised contract.
