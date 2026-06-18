@@ -94,10 +94,10 @@ final class CallRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
     func stream(
         _ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType
     ) {
-        guard type == .audio, sampleBuffer.isValid,
-              let formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer),
-              let format = AVAudioFormat(cmAudioFormatDescription: formatDesc) else { return }
+        guard type == .audio, CMSampleBufferIsValid(sampleBuffer),
+              let formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer) else { return }
 
+        let format = AVAudioFormat(cmAudioFormatDescription: formatDesc)
         let frames = AVAudioFrameCount(CMSampleBufferGetNumSamples(sampleBuffer))
         guard frames > 0,
               let pcm = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames) else { return }
