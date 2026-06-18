@@ -137,3 +137,29 @@ During the first-run model download no segments are emitted, so the UI shows a
 
 **Honesty note:** the fake backend's progress path is unit-tested on Linux; the MLX
 stdout-parsing path could not be verified on Apple Silicon here and is best-effort.
+
+## D13 — Self-contained, downloadable release (bundled worker + ad-hoc signed DMG)
+**Choice:** `scripts/build-release.sh` (driven by `.github/workflows/release.yml` on a
+`v*` tag) builds a standalone worker binary with **PyInstaller** (including the `audio`
++ `mlx` extras), generates and builds the app with `xcodebuild`, **embeds the worker
+in `OpenCallNotes.app/Contents/Resources/worker/`**, ad-hoc signs the bundle, and ships
+a drag-to-Applications `.dmg` as a GitHub Release. The app prefers, in order: an
+explicit Worker path > the bundled worker > `opencallnotes-worker` on `PATH`
+(`Preferences.bundledWorkerPath`). So a downloaded app runs with **zero configuration**
+and no Python/uv install.
+
+**Generated artifacts are not committed:** the `.xcodeproj` (regenerated from
+`project.yml`) and `.DS_Store`/`xcuserstate` were untracked and git-ignored.
+
+**Reasoning:** "download, click, run" requires the Python worker to travel inside the
+app; PyInstaller is the standard way to freeze it, and embedding in `Resources/` keeps
+the bundle self-contained.
+
+**Honesty notes / known limitations:**
+- This pipeline was authored on Linux and **cannot be run/verified here** — the first
+  `v*` tag push is its real test. PyInstaller + MLX is the most likely part to need a
+  tweak (extra `--collect-*` flags) on first run.
+- The app is **ad-hoc signed, not notarized** (no paid Apple Developer ID). Gatekeeper
+  quarantines downloads, so first launch needs right-click → Open (or
+  `xattr -dr com.apple.quarantine`). The script/workflow are structured so real
+  Developer ID signing + notarization can be added later via CI secrets.

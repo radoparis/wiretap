@@ -216,3 +216,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Xcode / macOS ---
+# The .xcodeproj is generated from app-macos/project.yml via XcodeGen; do not commit it.
+.DS_Store
+app-macos/OpenCallNotes.xcodeproj/
+*.xcuserstate
+xcuserdata/
+DerivedData/
+
+# --- Release build artifacts ---
+/dist/
+/build/
+worker/dist/
+worker/build/
+*.dmg

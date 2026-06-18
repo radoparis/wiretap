@@ -27,6 +27,20 @@ In the spirit of honesty:
   including the live transcription progress and MLX Whisper path — were done by the
   human owner on an Apple Silicon Mac.
 
+## Download (macOS, Apple Silicon)
+
+Grab the latest `.dmg` from the [**Releases**](../../releases) page, open it, and drag
+**OpenCallNotes** to Applications. The Python worker (recording + MLX Whisper
+transcription) is bundled inside the app — **no Python or uv install needed**.
+
+First launch: the app is ad-hoc signed but not notarized, so macOS Gatekeeper asks
+once — **right-click the app → Open**, or run
+`xattr -dr com.apple.quarantine /Applications/OpenCallNotes.app`. Then grant the
+microphone prompt and start recording.
+
+Releases are built by [`.github/workflows/release.yml`](.github/workflows/release.yml)
+when a `v*` tag is pushed (see [`docs/dev-guide.md`](docs/dev-guide.md#releasing)).
+
 ## What it does
 
 - Native macOS SwiftUI app with one obvious **Start / Stop Recording** button.

@@ -61,15 +61,36 @@ final class Preferences: ObservableObject {
         defaultModel = defaults.string(forKey: Key.defaultModel) ?? Preferences.models[0]
     }
 
+    /// A standalone worker binary bundled inside the .app (release builds), or nil
+    /// in dev builds. Lets a downloaded app run with zero configuration.
+    static func bundledWorkerPath() -> String? {
+        let fm = FileManager.default
+        let candidates = [
+            Bundle.main.resourceURL?
+                .appendingPathComponent("worker", isDirectory: true)
+                .appendingPathComponent("opencallnotes-worker"),
+            Bundle.main.url(forResource: "opencallnotes-worker", withExtension: nil),
+        ].compactMap { $0 }
+        return candidates.first { fm.isExecutableFile(atPath: $0.path) }?.path
+    }
+
     /// Resolve the effective launch configuration for the worker.
+    ///
+    /// Precedence: an explicit Worker path in Preferences > a worker bundled in the
+    /// .app > `opencallnotes-worker` resolved from PATH (dev/CLI installs).
     var launchConfig: LaunchConfig {
         let trimmedPath = workerPath.trimmingCharacters(in: .whitespaces)
-        let executable = trimmedPath.isEmpty ? "/usr/bin/env" : trimmedPath
+        let executable: String
         let leading: [String]
-        if trimmedPath.isEmpty {
-            leading = ["opencallnotes-worker"]
-        } else {
+        if !trimmedPath.isEmpty {
+            executable = trimmedPath
             leading = workerLeadingArgs.split(separator: " ").map(String.init)
+        } else if let bundled = Preferences.bundledWorkerPath() {
+            executable = bundled
+            leading = []
+        } else {
+            executable = "/usr/bin/env"
+            leading = ["opencallnotes-worker"]
         }
 
         var env = ProcessInfo.processInfo.environment

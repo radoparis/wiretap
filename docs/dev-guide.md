@@ -79,6 +79,35 @@ sync --extra audio --extra mlx`.
 
 Report any failure with the exact command/output per `10_DECISION_POLICY.md`.
 
+## Releasing
+
+A push of a `v*` tag triggers [`.github/workflows/release.yml`](../.github/workflows/release.yml),
+which runs `scripts/build-release.sh` on a macOS (Apple Silicon) runner and publishes a
+`.dmg` to a GitHub Release.
+
+Build the same `.dmg` locally on your Mac (requires `uv` + `xcodegen`):
+
+```bash
+./scripts/build-release.sh 0.1.0      # -> dist/OpenCallNotes-0.1.0.dmg
+```
+
+It (1) freezes the worker — with the `audio` + `mlx` extras — into a standalone binary
+via PyInstaller, (2) generates + builds the app, (3) embeds the worker in
+`OpenCallNotes.app/Contents/Resources/worker/`, (4) ad-hoc signs, and (5) makes the DMG.
+
+To cut a release:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+> The pipeline is unverified until its first run (authored without macOS). PyInstaller +
+> MLX is the likeliest thing to need an extra `--collect-*` flag — iterate on the build
+> log if the worker binary fails to start inside the app. The app is ad-hoc signed, not
+> notarized; Developer ID signing + notarization can be added later via CI secrets. See
+> `../DECISIONS.md` D13.
+
 ## Worker JSON contract
 
 Every command prints exactly one JSON object to stdout. Failures print
