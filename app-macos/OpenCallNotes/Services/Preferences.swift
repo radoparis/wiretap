@@ -76,13 +76,16 @@ final class Preferences: ObservableObject {
 
     /// Resolve the effective launch configuration for the worker.
     ///
-    /// Precedence: an explicit Worker path in Preferences > a worker bundled in the
-    /// .app > `opencallnotes-worker` resolved from PATH (dev/CLI installs).
+    /// Precedence: an explicit Worker path in Preferences (only if it exists) > a
+    /// worker bundled in the .app > `opencallnotes-worker` resolved from PATH
+    /// (dev/CLI installs). A configured path that no longer exists is ignored so a
+    /// stale setting can't break a bundled app.
     var launchConfig: LaunchConfig {
+        let fm = FileManager.default
         let trimmedPath = workerPath.trimmingCharacters(in: .whitespaces)
         let executable: String
         let leading: [String]
-        if !trimmedPath.isEmpty {
+        if !trimmedPath.isEmpty, fm.isExecutableFile(atPath: trimmedPath) {
             executable = trimmedPath
             leading = workerLeadingArgs.split(separator: " ").map(String.init)
         } else if let bundled = Preferences.bundledWorkerPath() {
