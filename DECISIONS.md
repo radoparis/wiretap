@@ -1,7 +1,7 @@
 # Decisions
 
 This file records the non-obvious product/technical decisions made while building
-OpenCallNotes autonomously, per `wiretap-agent-docs/10_DECISION_POLICY.md`. Each
+OpenCallNotes autonomously, per `opencallnotes-agent-docs/10_DECISION_POLICY.md`. Each
 entry states the choice, the alternatives considered, and the reasoning.
 
 ## D1 — Recording across stateless `record start` / `record stop` invocations
@@ -79,8 +79,12 @@ re-renders a single requested format on demand.
 **Reasoning:** Convenience for the UI (`06_UI_SPEC.md` shows all export buttons) at
 negligible cost; `export` remains available for re-generation.
 
-## D9 — License: MIT
-Per `10_DECISION_POLICY.md` default. (Repo already ships an MIT `LICENSE`.)
+## D9 — License: GNU GPL v3.0
+The spec (`10_DECISION_POLICY.md`) defaults to MIT, and earlier drafts of this repo's
+docs claimed MIT — but the `LICENSE` file actually committed in the initial commit is
+**GNU GPL v3.0**, and the project owner chose to **keep GPL‑3.0** (strong copyleft).
+All docs and `worker/pyproject.toml` are aligned to GPL‑3.0; the canonical spec under
+`opencallnotes-agent-docs/` is left unedited (it records the original MIT recommendation).
 
 ## D10 — Xcode project via XcodeGen; unsandboxed dev-mode app
 **Choice:** The Xcode project is defined by `app-macos/project.yml` and generated
@@ -111,3 +115,51 @@ Preferences let a developer point at `scripts/run-worker.sh` instead.
 **Reasoning:** Passing a fixed argv means user-entered session titles cannot inject
 shell commands (security requirement). `OPENCALLNOTES_HOME` is passed via the child
 environment, not interpolated into a command string.
+
+## D12 — Transcription progress via a polled progress file
+**Choice:** `transcribe` is a single blocking call, so for live progress the worker
+runs Whisper with `verbose=True`, captures the per-segment lines it prints (keeping the
+worker's real stdout a clean JSON object), parses each segment's end timestamp, and
+writes `<session>/transcribe.progress` = `{processed_seconds, total_seconds, fraction}`.
+The app polls that file (every 0.4s) during the call and shows a determinate progress
+bar. Progress = processed audio seconds ÷ total duration.
+
+**Alternatives:** (a) streaming incremental JSON from the worker — breaks the
+one-object-per-call contract; (b) chunking the audio ourselves to report progress —
+risks cutting words mid-segment and degrading accuracy; (c) an indeterminate spinner —
+poor UX for long meetings.
+
+**Reasoning:** A file poll is the simplest thing that yields *true* progress without
+changing the CLI contract or touching transcription quality. It degrades gracefully:
+if the verbose format is unrecognized the bar simply stays at 0% (the call still works).
+During the first-run model download no segments are emitted, so the UI shows a
+"Preparing… first run downloads the model" message while the fraction is 0.
+
+**Honesty note:** the fake backend's progress path is unit-tested on Linux; the MLX
+stdout-parsing path could not be verified on Apple Silicon here and is best-effort.
+
+## D13 — Self-contained, downloadable release (bundled worker + ad-hoc signed DMG)
+**Choice:** `scripts/build-release.sh` (driven by `.github/workflows/release.yml` on a
+`v*` tag) builds a standalone worker binary with **PyInstaller** (including the `audio`
++ `mlx` extras), generates and builds the app with `xcodebuild`, **embeds the worker
+in `OpenCallNotes.app/Contents/Resources/worker/`**, ad-hoc signs the bundle, and ships
+a drag-to-Applications `.dmg` as a GitHub Release. The app prefers, in order: an
+explicit Worker path > the bundled worker > `opencallnotes-worker` on `PATH`
+(`Preferences.bundledWorkerPath`). So a downloaded app runs with **zero configuration**
+and no Python/uv install.
+
+**Generated artifacts are not committed:** the `.xcodeproj` (regenerated from
+`project.yml`) and `.DS_Store`/`xcuserstate` were untracked and git-ignored.
+
+**Reasoning:** "download, click, run" requires the Python worker to travel inside the
+app; PyInstaller is the standard way to freeze it, and embedding in `Resources/` keeps
+the bundle self-contained.
+
+**Honesty notes / known limitations:**
+- This pipeline was authored on Linux and **cannot be run/verified here** — the first
+  `v*` tag push is its real test. PyInstaller + MLX is the most likely part to need a
+  tweak (extra `--collect-*` flags) on first run.
+- The app is **ad-hoc signed, not notarized** (no paid Apple Developer ID). Gatekeeper
+  quarantines downloads, so first launch needs right-click → Open (or
+  `xattr -dr com.apple.quarantine`). The script/workflow are structured so real
+  Developer ID signing + notarization can be added later via CI secrets.

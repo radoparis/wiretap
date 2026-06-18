@@ -3,11 +3,43 @@
 OpenCallNotes is a local-first macOS app for recording conversations and generating
 transcripts on your Mac — no paid APIs, no cloud upload.
 
-> **Status:** MVP. The Python worker is implemented and tested (ruff + mypy + 39
-> passing tests, no audio hardware required). The SwiftUI app is implemented as
-> portable source generated via XcodeGen; it has **not yet been compiled/run on
-> macOS** — see the manual validation procedure in
-> [`docs/dev-guide.md`](docs/dev-guide.md) and [`DECISIONS.md`](DECISIONS.md) (D10).
+> **Status:** Working MVP. The Python worker is implemented and tested (ruff + mypy +
+> 45 passing tests, no audio hardware required). The SwiftUI app was authored without a
+> Mac to compile on, and has since been **built and run successfully on Apple Silicon**
+> by the project owner — recording and on-device transcription confirmed working. See
+> the manual validation procedure in [`docs/dev-guide.md`](docs/dev-guide.md).
+
+## How this was built
+
+OpenCallNotes was implemented **fully autonomously by a Claude agent**
+(Anthropic's Claude Opus 4.8), working from the product and architecture specification
+in [`opencallnotes-agent-docs/`](opencallnotes-agent-docs/), which was **authored by GPT‑5.5**. The
+agent read the spec, made and documented its own implementation decisions
+([`DECISIONS.md`](DECISIONS.md)), wrote all of the code and tests, and ran the quality
+gates. The human's role — as the spec itself defined — was to run the app on macOS,
+grant permissions, validate behavior, and report bugs.
+
+In the spirit of honesty:
+- The **Python worker** was written *and verified* by the agent (ruff, mypy, 45 tests)
+  in a Linux environment using hardware‑free test backends.
+- The **SwiftUI macOS app** was written by the agent but **never compiled or run by
+  it** (no macOS in its build environment). Compilation and real‑world validation —
+  including the live transcription progress and MLX Whisper path — were done by the
+  human owner on an Apple Silicon Mac.
+
+## Download (macOS, Apple Silicon)
+
+Grab the latest `.dmg` from the [**Releases**](../../releases) page, open it, and drag
+**OpenCallNotes** to Applications. The Python worker (recording + MLX Whisper
+transcription) is bundled inside the app — **no Python or uv install needed**.
+
+First launch: the app is ad-hoc signed but not notarized, so macOS Gatekeeper asks
+once — **right-click the app → Open**, or run
+`xattr -dr com.apple.quarantine /Applications/OpenCallNotes.app`. Then grant the
+microphone prompt and start recording.
+
+Releases are built by [`.github/workflows/release.yml`](.github/workflows/release.yml)
+when a `v*` tag is pushed (see [`docs/dev-guide.md`](docs/dev-guide.md#releasing)).
 
 ## What it does
 
@@ -81,4 +113,4 @@ Conventions and the manual macOS validation procedure are in
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+GNU General Public License v3.0 — see [`LICENSE`](LICENSE).

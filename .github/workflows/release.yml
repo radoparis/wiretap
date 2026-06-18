@@ -1,0 +1,71 @@
+name: Release macOS app
+
+# Push a tag like v0.1.0 to build the .dmg and publish a GitHub Release.
+# Use the "Run workflow" button (workflow_dispatch) to build a DMG artifact
+# without publishing a release.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & package OpenCallNotes.app
+    runs-on: macos-14  # Apple Silicon
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app
+
+      - name: Derive version
+        id: version
+        run: |
+          REF="${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build release DMG
+        run: ./scripts/build-release.sh "${{ steps.version.outputs.version }}"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenCallNotes-${{ steps.version.outputs.version }}-dmg
+          path: dist/*.dmg
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.dmg
+          generate_release_notes: true
+          body: |
+            OpenCallNotes ${{ github.ref_name }} — local-first macOS recording + on-device transcription.
+
+            ## Install
+            1. Download the `.dmg` below and open it.
+            2. Drag **OpenCallNotes** to Applications.
+            3. First launch: **right-click the app → Open** (the build is ad-hoc signed,
+               not notarized, so Gatekeeper asks once). Or run:
+               `xattr -dr com.apple.quarantine /Applications/OpenCallNotes.app`
+            4. Grant the microphone permission prompt and start recording.
+
+            The Python worker (recording + MLX Whisper transcription) is bundled inside
+            the app — no Python or uv install needed.
