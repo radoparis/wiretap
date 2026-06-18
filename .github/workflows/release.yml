@@ -63,10 +63,12 @@ jobs:
 
             ## Install
             1. Download the `.dmg` below and open it.
-            2. Drag **OpenCallNotes** to Applications.
-            3. First launch: **right-click the app → Open** (the build is ad-hoc signed,
-               not notarized, so Gatekeeper asks once). Or run:
-               `xattr -dr com.apple.quarantine /Applications/OpenCallNotes.app`
+            2. Drag **OpenCallNotes** onto **Applications**.
+            3. The app is open-source and **not notarized**, so macOS quarantines it
+               (otherwise you'd see "Could not parse worker output"). **Double-click
+               "Fix & Open OpenCallNotes.command"** in the DMG to clear quarantine and
+               launch — once per install. (Terminal equivalent:
+               `xattr -dr com.apple.quarantine /Applications/OpenCallNotes.app`.)
             4. Grant the microphone permission prompt and start recording.
 
             The Python worker (recording + MLX Whisper transcription) is bundled inside

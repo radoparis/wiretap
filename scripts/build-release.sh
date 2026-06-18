@@ -39,9 +39,20 @@ for pkg in mlx mlx_whisper sounddevice tiktoken numba scipy numpy; do
         echo "    skipping (not importable): ${pkg}"
     fi
 done
+# mlx-whisper pulls torch as a transitive dep, but only its weight-conversion path
+# (torch_whisper.py) uses it; the MLX transcription path does not. Excluding torch &
+# friends roughly halves the bundle. If transcription ever breaks with a torch
+# ImportError, drop the matching --exclude-module line.
+EXCLUDE_ARGS=(
+    --exclude-module torch
+    --exclude-module torchvision
+    --exclude-module torchaudio
+    --exclude-module tensorboard
+)
 uv run pyinstaller --noconfirm --clean --onedir \
     --name opencallnotes-worker \
     "${COLLECT_ARGS[@]}" \
+    "${EXCLUDE_ARGS[@]}" \
     packaging/entry.py
 popd >/dev/null
 WORKER_DIST="${REPO_ROOT}/worker/dist/opencallnotes-worker"
@@ -86,6 +97,50 @@ echo "==> [5/5] Creating DMG"
 STAGING="$(mktemp -d)"
 cp -R "${APP}" "${STAGING}/"
 ln -s /Applications "${STAGING}/Applications"
+
+# Quarantine helper: the app is ad-hoc signed (not notarized), so a downloaded
+# build is quarantined and macOS blocks it from launching its bundled worker.
+# This one-click helper clears the quarantine flag and opens the app.
+cat > "${STAGING}/Fix & Open OpenCallNotes.command" <<'CMD'
+#!/bin/bash
+APP="/Applications/OpenCallNotes.app"
+if [ ! -d "$APP" ]; then
+  echo "Drag OpenCallNotes onto the Applications folder first, then run this again."
+  read -r -p "Press Return to close…"
+  exit 1
+fi
+echo "Clearing macOS quarantine on OpenCallNotes…"
+xattr -dr com.apple.quarantine "$APP" 2>/dev/null || true
+echo "Opening OpenCallNotes…"
+open "$APP"
+CMD
+chmod +x "${STAGING}/Fix & Open OpenCallNotes.command"
+
+cat > "${STAGING}/READ ME FIRST.txt" <<'TXT'
+OpenCallNotes — install
+=======================
+
+1. Drag OpenCallNotes onto the Applications folder (in this window).
+
+2. Because OpenCallNotes is open-source and not notarized by Apple, macOS
+   quarantines it and will otherwise show errors like "Could not parse worker
+   output". To fix this in one step:
+
+     • Double-click "Fix & Open OpenCallNotes.command".
+       (If macOS blocks it: right-click it → Open → Open.)
+
+   That clears the quarantine flag and launches the app. You only need to do
+   this once per install.
+
+   Prefer the terminal? Run:
+     xattr -dr com.apple.quarantine /Applications/OpenCallNotes.app
+
+3. On first launch, grant the microphone permission prompt, then record.
+   The first transcription downloads the Whisper model once (~a few hundred MB).
+
+Everything runs locally on your Mac. No cloud, no account.
+TXT
+
 DMG="${DIST}/${APP_NAME}-${VERSION}.dmg"
 hdiutil create -volname "${APP_NAME}" -srcfolder "${STAGING}" -ov -format UDZO "${DMG}"
 rm -rf "${STAGING}"

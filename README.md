@@ -29,14 +29,19 @@ In the spirit of honesty:
 
 ## Download (macOS, Apple Silicon)
 
-Grab the latest `.dmg` from the [**Releases**](../../releases) page, open it, and drag
-**OpenCallNotes** to Applications. The Python worker (recording + MLX Whisper
-transcription) is bundled inside the app — **no Python or uv install needed**.
+Grab the latest `.dmg` from the [**Releases**](../../releases) page and open it. The
+Python worker (recording + MLX Whisper transcription) is bundled inside the app — **no
+Python or uv install needed**.
 
-First launch: the app is ad-hoc signed but not notarized, so macOS Gatekeeper asks
-once — **right-click the app → Open**, or run
-`xattr -dr com.apple.quarantine /Applications/OpenCallNotes.app`. Then grant the
-microphone prompt and start recording.
+1. Drag **OpenCallNotes** onto **Applications**.
+2. OpenCallNotes is open-source and **not notarized**, so macOS quarantines it (you'd
+   otherwise see "Could not parse worker output"). Fix it in one step:
+   **double-click "Fix & Open OpenCallNotes.command"** in the DMG (if macOS blocks it,
+   right-click → Open). That clears the quarantine flag and launches the app — once per
+   install. Terminal equivalent:
+   `xattr -dr com.apple.quarantine /Applications/OpenCallNotes.app`
+3. Grant the microphone prompt and start recording. The first transcription downloads
+   the Whisper model once.
 
 Releases are built by [`.github/workflows/release.yml`](.github/workflows/release.yml)
 when a `v*` tag is pushed (see [`docs/dev-guide.md`](docs/dev-guide.md#releasing)).

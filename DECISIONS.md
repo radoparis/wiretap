@@ -160,6 +160,13 @@ the bundle self-contained.
   `v*` tag push is its real test. PyInstaller + MLX is the most likely part to need a
   tweak (extra `--collect-*` flags) on first run.
 - The app is **ad-hoc signed, not notarized** (no paid Apple Developer ID). Gatekeeper
-  quarantines downloads, so first launch needs right-click → Open (or
-  `xattr -dr com.apple.quarantine`). The script/workflow are structured so real
-  Developer ID signing + notarization can be added later via CI secrets.
+  quarantines downloads, and — critically — blocks the GUI app from spawning its
+  **nested** unsigned worker binary (it gets killed → empty output). The DMG therefore
+  ships a **"Fix & Open OpenCallNotes.command"** helper + a READ ME that clear
+  quarantine (`xattr -dr com.apple.quarantine`). Real Developer ID signing +
+  notarization (which removes this entirely) can be added later via CI secrets.
+- **Bundle slim-down:** `mlx-whisper` pulls `torch` transitively, but only its
+  weight-conversion path uses it; the MLX transcription path does not. The build
+  `--exclude-module`s torch/torchvision/torchaudio/tensorboard to roughly halve the
+  DMG. If transcription ever fails with a torch `ImportError`, remove the matching
+  exclude.
