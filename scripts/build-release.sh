@@ -28,12 +28,20 @@ mkdir -p "${DIST}"
 echo "==> [1/5] Building standalone worker (PyInstaller)"
 pushd "${REPO_ROOT}/worker" >/dev/null
 uv sync --extra audio --extra mlx --group packaging
+# Only --collect-all packages that are actually importable, so a missing optional
+# transitive dependency cannot hard-fail the freeze.
+COLLECT_ARGS=()
+for pkg in mlx mlx_whisper sounddevice tiktoken numba scipy numpy; do
+    if uv run python -c "import ${pkg}" 2>/dev/null; then
+        COLLECT_ARGS+=(--collect-all "${pkg}")
+        echo "    bundling: ${pkg}"
+    else
+        echo "    skipping (not importable): ${pkg}"
+    fi
+done
 uv run pyinstaller --noconfirm --clean --onedir \
     --name opencallnotes-worker \
-    --collect-all mlx \
-    --collect-all mlx_whisper \
-    --collect-all sounddevice \
-    --collect-all tiktoken \
+    "${COLLECT_ARGS[@]}" \
     packaging/entry.py
 popd >/dev/null
 WORKER_DIST="${REPO_ROOT}/worker/dist/opencallnotes-worker"
